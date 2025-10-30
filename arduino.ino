@@ -14,7 +14,7 @@ void loop() {
   float t = dht.readTemperature();
 
   if (!isnan(h) && !isnan(t)) {
-    Serial.print("{\"temperatura\":");
+    Serial.print("\"temperatura\":");
     Serial.print(t);
     Serial.print(",\"umidade\":");
     Serial.print(h);

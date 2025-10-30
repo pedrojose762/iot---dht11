@@ -1,0 +1,61 @@
+<!-- public/login.html -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login — Smart Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{ --bg:#0f1724; --card:rgba(255,255,255,0.06); --accent:#7c3aed; --white:#fff; }
+body{ margin:0; font-family:'Poppins',sans-serif; background:linear-gradient(135deg,#020617,#07133b); color:var(--white); min-height:100vh; display:flex; align-items:center; justify-content:center; }
+.card{ width:360px; background:var(--card); padding:28px; border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,0.6); backdrop-filter: blur(8px); }
+.brand{ display:flex; gap:12px; align-items:center; margin-bottom:8px; }
+.logo{ width:48px; height:48px; border-radius:12px; background:linear-gradient(135deg,#7c3aed,#06b6d4); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; }
+h1{ margin:0; font-size:18px; }
+p{ margin:6px 0 20px 0; color:rgba(255,255,255,0.75); font-size:13px; }
+.input{ width:100%; padding:12px 14px; border-radius:10px; border:none; outline:none; margin-bottom:12px; background:rgba(255,255,255,0.03); color:var(--white); }
+.btn{ width:100%; padding:12px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; box-shadow:0 6px 18px rgba(124,58,237,0.28); }
+.small{ font-size:12px; color:rgba(255,255,255,0.6); text-align:center; margin-top:12px; }
+.footer{ margin-top:14px; text-align:center; font-size:12px; color:rgba(255,255,255,0.45); }
+.brand-note{ font-size:12px; color:rgba(255,255,255,0.6); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="logo">D</div>
+    <div>
+      <h1>Smart DHT11 Dashboard</h1>
+      <div class="brand-note">Acesse com qualquer email e senha</div>
+    </div>
+  </div>
+  <p>Entre para ver o painel em tempo real do seu sensor DHT11.</p>
+  <input id="email" class="input" placeholder="Email" type="email" />
+  <input id="pwd" class="input" placeholder="Senha" type="password" />
+  <button id="submit" class="btn">Entrar</button>
+  <div class="small">Ao entrar você será redirecionado para o dashboard.</div>
+  <div class="footer">Feito para você — cole & rode localmente</div>
+</div>
+
+<script>
+document.getElementById("submit").onclick = async () => {
+  const email = document.getElementById("email").value || "user@example.com";
+  const password = document.getElementById("pwd").value || "123456";
+  try {
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ email, password })
+    });
+    const j = await res.json();
+    if (j.ok) {
+      window.location.href = "/dashboard.html";
+    } else {
+      alert("Erro no login: " + (j.msg||""));
+    }
+  } catch(e) { alert("Falha ao conectar ao servidor."); }
+};
+</script>
+</body>
+</html>

@@ -1,64 +1,303 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <title>Dashboard IoT</title>
-  <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Dashboard - DHT11 via MQTT</title>
+
+<!-- MQTT.js + Chart.js -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Estilo moderno -->
+<style>
+:root {
+  --bg: #0d1117;
+  --fg: #e6edf3;
+  --card: #161b22;
+  --accent: #00bcd4;
+  --accent2: #4caf50;
+  --error: #ff5252;
+  --muted: #8b949e;
+}
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --fg: #24292f;
+  --card: #fff;
+  --accent: #0288d1;
+  --accent2: #388e3c;
+  --error: #e53935;
+  --muted: #666;
+}
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  transition: 0.4s background, 0.4s color;
+}
+header {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  padding: 14px 24px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+header h1 { margin: 0; font-size: 22px; }
+header button {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+header button:hover { background: rgba(255,255,255,0.25); }
+
+main {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 10px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.card h2 {
+  margin-top: 0;
+  font-size: 18px;
+  border-bottom: 1px solid var(--muted);
+  padding-bottom: 8px;
+}
+.value {
+  font-size: 48px;
+  text-align: center;
+  font-weight: 600;
+}
+.status {
+  text-align: center;
+  color: var(--muted);
+  margin-top: 6px;
+}
+#charts canvas {
+  width: 100% !important;
+  height: 300px !important;
+}
+.logs {
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 8px;
+  font-family: monospace;
+  font-size: 13px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+footer {
+  text-align: center;
+  color: var(--muted);
+  margin: 18px 0;
+  font-size: 14px;
+}
+section { display: none; }
+section.active { display: block; }
+.navbar {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.navbar button {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--fg);
+  padding: 8px 12px;
+  margin: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.navbar button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+input, select {
+  background: var(--card);
+  color: var(--fg);
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+@media (max-width:600px){
+  header h1{font-size:18px;}
+  .value{font-size:36px;}
+}
+</style>
 </head>
-<body>
-  <h2>Monitoramento DHT11</h2>
-  <canvas id="grafico" width="400" height="200"></canvas>
 
-  <script>
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+<body data-theme="dark">
+<header>
+  <h1>🌡️ Smart Dashboard - DHT11 MQTT</h1>
+  <button id="themeBtn">Alternar Tema</button>
+</header>
 
-    const labels = [];
-    const tempData = [];
-    const humData = [];
+<main>
+  <div class="navbar">
+    <button class="active" data-tab="painel">Painel</button>
+    <button data-tab="graficos">Gráficos</button>
+    <button data-tab="logs">Logs</button>
+    <button data-tab="config">Configurações</button>
+  </div>
 
-    const ctx = document.getElementById("grafico").getContext("2d");
-    const chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: "Temperatura (°C)",
-            data: tempData,
-            borderColor: "red",
-            fill: false
-          },
-          {
-            label: "Umidade (%)",
-            data: humData,
-            borderColor: "blue",
-            fill: false
-          }
-        ]
-      }
-    });
+  <!-- Painel -->
+  <section id="painel" class="active">
+    <div class="grid">
+      <div class="card">
+        <h2>Temperatura</h2>
+        <div class="value" id="tempValue">-- °C</div>
+        <div class="status" id="tempStatus">Aguardando dados...</div>
+      </div>
+      <div class="card">
+        <h2>Umidade</h2>
+        <div class="value" id="humValue">-- %</div>
+        <div class="status" id="humStatus">Aguardando dados...</div>
+      </div>
+      <div class="card">
+        <h2>Status dos Sensores</h2>
+        <p id="statusSensor">🔴 Desconectado</p>
+        <p><small>Atualizado em tempo real via MQTT.</small></p>
+      </div>
+    </div>
+  </section>
 
-    client.on("connect", () => {
-      console.log("Conectado ao MQTT!");
-      client.subscribe("senai/iot/dht11");
-    });
+  <!-- Gráficos -->
+  <section id="graficos">
+    <div class="card" id="charts">
+      <h2>Temperatura e Umidade (Tempo Real)</h2>
+      <canvas id="chart"></canvas>
+    </div>
+  </section>
 
-    client.on("message", (topic, message) => {
-      const data = JSON.parse(message.toString());
-      const time = new Date().toLocaleTimeString();
+  <!-- Logs -->
+  <section id="logs">
+    <div class="card">
+      <h2>Logs do Sistema</h2>
+      <div class="logs" id="logBox"></div>
+    </div>
+  </section>
 
-      labels.push(time);
-      tempData.push(data.temperatura);
-      humData.push(data.umidade);
+  <!-- Config -->
+  <section id="config">
+    <div class="card">
+      <h2>Conexão MQTT</h2>
+      <input id="brokerUrl" value="wss://test.mosquitto.org:8081">
+      <input id="topic" value="home/sensors/dht11">
+      <button id="connectBtn">Conectar</button>
+      <p id="mqttStatus" style="margin-top:8px;color:var(--muted)">Status: Desconectado</p>
+    </div>
+  </section>
+</main>
 
-      if (labels.length > 20) {
-        labels.shift();
-        tempData.shift();
-        humData.shift();
-      }
+<footer>
+  Criado por Pedro José © 2025 — Dashboard MQTT moderno e responsivo.
+</footer>
 
-      chart.update();
-    });
-  </script>
+<script>
+let client, chart;
+let labels=[], tempData=[], humData=[], maxPoints=20;
+
+function log(msg){
+  const box=document.getElementById("logBox");
+  const time=new Date().toLocaleTimeString();
+  box.innerHTML+=`[${time}] ${msg}<br>`;
+  box.scrollTop=box.scrollHeight;
+}
+
+document.querySelectorAll(".navbar button").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll(".navbar button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll("section").forEach(sec=>sec.classList.remove("active"));
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  }
+});
+
+document.getElementById("themeBtn").onclick=()=>{
+  const b=document.body;
+  b.dataset.theme=b.dataset.theme==="dark"?"light":"dark";
+};
+
+document.getElementById("connectBtn").onclick=()=>{
+  const broker=document.getElementById("brokerUrl").value;
+  const topic=document.getElementById("topic").value;
+  if(client){client.end();}
+  client=mqtt.connect(broker);
+  log(`🔌 Conectando a ${broker}...`);
+
+  client.on("connect",()=>{
+    client.subscribe(topic);
+    document.getElementById("mqttStatus").innerText="Status: Conectado ✅";
+    log("🟢 Conectado ao broker!");
+  });
+
+  client.on("message",(t,msg)=>{
+    const m=msg.toString();
+    log("📩 "+m);
+    const temp=m.match(/TEMP:([\d.]+)/);
+    const hum=m.match(/HUM:([\d.]+)/);
+    const now=new Date().toLocaleTimeString();
+    if(temp){ 
+      document.getElementById("tempValue").innerText=temp[1]+" °C";
+      document.getElementById("tempStatus").innerText="Sensor ativo";
+      document.getElementById("statusSensor").innerHTML="🟢 Operando normalmente";
+      labels.push(now); tempData.push(parseFloat(temp[1]));
+      if(labels.length>maxPoints){labels.shift();tempData.shift();humData.shift();}
+    }
+    if(hum){
+      document.getElementById("humValue").innerText=hum[1]+" %";
+      document.getElementById("humStatus").innerText="Sensor ativo";
+      humData.push(parseFloat(hum[1]));
+      if(humData.length>maxPoints){humData.shift();}
+    }
+    chart.update();
+  });
+};
+
+// gráfico combinado
+const ctx=document.getElementById("chart");
+chart=new Chart(ctx,{
+  type:"line",
+  data:{
+    labels:labels,
+    datasets:[
+      { label:"Temperatura (°C)", data:tempData, borderColor:"#ff5252", tension:.3, fill:false },
+      { label:"Umidade (%)", data:humData, borderColor:"#00bcd4", tension:.3, fill:false }
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{labels:{color:"var(--fg)"}}},
+    scales:{
+      x:{ticks:{color:"var(--fg)"}},
+      y:{ticks:{color:"var(--fg)"}}
+    }
+  }
+});
+</script>
 </body>
 </html>
