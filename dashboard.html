@@ -3,221 +3,328 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard IoT Pro - DHT11</title>
+<title>IoT Dashboard Pro - DHT11</title>
 
+<!-- Dependências -->
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  --primary: #00b4d8;
-  --bg: #0d0d0d;
-  --fg: #fff;
-  --card: #141414;
-  --accent: #222;
-  --success: #06d6a0;
-  --error: #f94144;
-  --alert-temp: #f8961e;
-  --alert-hum: #f3722c;
-}
-[data-theme="light"] {
-  --bg: #f8f9fa;
-  --fg: #111;
-  --card: #fff;
-  --accent: #e5e5e5;
+  --primary: #007bff;
+  --bg: #f5f6fa;
+  --fg: #1a1a1a;
+  --card: #ffffff;
+  --accent: #e9ecef;
+  --success: #28a745;
+  --error: #dc3545;
+  --warning: #ffc107;
+  --radius: 12px;
 }
 
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-body{background:var(--bg);color:var(--fg);min-height:100vh;transition:0.4s;}
-header{background:var(--card);padding:15px 30px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 10px rgba(0,0,0,0.4);}
-header h1{color:var(--primary);font-size:1.5rem;}
-.btn{background:var(--primary);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-weight:600;cursor:pointer;transition:0.3s;}
-.btn:hover{opacity:0.85;}
-.theme-btn{background:transparent;border:none;color:var(--primary);font-size:1.4rem;cursor:pointer;}
-.main{padding:24px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));}
-.card{background:var(--card);border-radius:16px;padding:20px;box-shadow:0 0 15px rgba(0,0,0,0.3);transition:0.3s;}
-.card:hover{transform:translateY(-4px);}
-.card h2{color:var(--primary);margin-bottom:10px;font-size:1.1rem;}
-.value{font-size:2rem;margin-top:6px;}
-.log{font-family:monospace;font-size:0.9rem;max-height:180px;overflow-y:auto;background:var(--accent);padding:10px;border-radius:8px;}
-.status{font-weight:600;display:inline-block;padding:4px 8px;border-radius:8px;color:#fff;transition:0.3s;}
-.status.on{background:var(--success);}
-.status.off{background:var(--error);}
-footer{text-align:center;padding:12px;color:gray;font-size:0.85rem;}
-.login-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999;}
-.login-box{background:var(--card);padding:30px;border-radius:14px;width:90%;max-width:380px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);animation:pop 0.4s ease;}
-@keyframes pop{from{transform:scale(0.9);opacity:0;}to{transform:scale(1);opacity:1;}}
-.login-box input{width:100%;margin-bottom:12px;padding:10px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);color:var(--fg);}
-.profile{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
-.profile span{font-weight:600;}
-.profile button{padding:4px 8px;border-radius:8px;font-size:0.8rem;}
-.alert{font-weight:600;color:#fff;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:4px;}
-.alert.temp{background:var(--alert-temp);}
-.alert.hum{background:var(--alert-hum);}
-@media(max-width:600px){header{flex-direction:column;gap:10px;}.main{grid-template-columns:1fr;}}
+[data-theme="dark"] {
+  --bg: #121212;
+  --fg: #f1f1f1;
+  --card: #1e1e1e;
+  --accent: #2b2b2b;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  transition: background 0.4s, color 0.4s;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: var(--card);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+header h1 {
+  color: var(--primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+header .actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn:hover { opacity: 0.9; }
+.theme-btn {
+  background: none;
+  border: 1px solid var(--accent);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+/* ===== MAIN ===== */
+main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  padding: 25px;
+}
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+.card:hover { transform: translateY(-4px); }
+.card h2 {
+  font-size: 1.2rem;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+.value {
+  font-size: 2.2rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #fff;
+}
+.status.on { background: var(--success); }
+.status.off { background: var(--error); }
+.alert {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #fff;
+}
+.alert.temp { background: var(--warning); }
+.alert.hum { background: var(--error); }
+.log {
+  background: var(--accent);
+  border-radius: var(--radius);
+  padding: 10px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ===== LOGIN ===== */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.login-box {
+  background: var(--card);
+  padding: 35px;
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 380px;
+  box-shadow: 0 0 25px rgba(0,0,0,0.3);
+  text-align: center;
+}
+.login-box h2 {
+  color: var(--primary);
+  margin-bottom: 20px;
+}
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: var(--bg);
+  color: var(--fg);
+}
+.login-box .btn { width: 100%; }
+
+footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
 </style>
 </head>
-<body data-theme="dark">
+<body data-theme="light">
 
 <!-- LOGIN -->
 <div id="login" class="login-overlay">
   <div class="login-box">
-    <h2 style="color:var(--primary);margin-bottom:15px;">Entrar no Dashboard</h2>
+    <h2>🔐 Entrar no Dashboard</h2>
     <input id="email" type="email" placeholder="E-mail">
     <input id="password" type="password" placeholder="Senha">
     <button id="loginBtn" class="btn">Entrar</button>
-    <p style="font-size:0.8rem;color:gray;margin-top:8px;">Use qualquer e-mail e senha</p>
+    <p style="font-size:0.8rem;color:gray;margin-top:10px;">Use um e-mail e senha válidos</p>
   </div>
 </div>
 
 <header>
-  <h1>🌡️ Dashboard IoT Pro - DHT11</h1>
-  <div>
-    <button class="theme-btn" id="themeBtn">🌓</button>
+  <h1>🌡️ IoT Dashboard Pro - DHT11</h1>
+  <div class="actions">
+    <button id="themeBtn" class="theme-btn">🌗 Tema</button>
+    <button id="logoutBtn" class="btn">Logout</button>
   </div>
 </header>
 
-<div class="main">
-  <!-- SENSOR CONTROLE -->
+<main>
   <div class="card">
-    <div class="profile">
-      <span id="userEmail">Usuário: --</span>
-      <button id="logoutBtn">Logout</button>
-    </div>
-    <h2>Status do Sensor: <span id="sensorStatus" class="status off">OFF</span></h2>
-    <button id="toggleSensor" class="btn">Ligar Sensor</button>
-    <p>Última atualização: <span id="lastUpdate">--:--:--</span></p>
+    <h2>Status do Sensor</h2>
+    <p><span id="sensorStatus" class="status off">OFF</span></p>
+    <button id="toggleSensor" class="btn" style="margin-top:10px;">Ligar Sensor</button>
+    <p style="margin-top:8px;">Última atualização: <span id="lastUpdate">--:--:--</span></p>
     <div id="alerts"></div>
   </div>
 
-  <!-- TEMPERATURA -->
   <div class="card">
     <h2>Temperatura Atual</h2>
     <div id="temp" class="value">-- °C</div>
     <canvas id="tempChart" height="150"></canvas>
   </div>
 
-  <!-- UMIDADE -->
   <div class="card">
     <h2>Umidade Atual</h2>
     <div id="hum" class="value">-- %</div>
     <canvas id="humChart" height="150"></canvas>
   </div>
 
-  <!-- LOGS -->
   <div class="card" style="grid-column:1/-1;">
-    <h2>Logs</h2>
+    <h2>Logs do Sistema</h2>
     <div id="logs" class="log"></div>
   </div>
-</div>
+</main>
 
-<footer>🌍 Dashboard DHT11 via MQTT • Profissional e Responsivo</footer>
+<footer>📡 Dashboard IoT DHT11 — MQTT em tempo real • 2025</footer>
 
 <script>
-  // LOGIN
-  const loginOverlay = document.getElementById('login');
-  const userEmailEl = document.getElementById('userEmail');
-  const logoutBtn = document.getElementById('logoutBtn');
-  document.getElementById('loginBtn').onclick = ()=>{
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
-    if(email && pass){
-      loginOverlay.style.display = 'none';
-      userEmailEl.innerText = `Usuário: ${email}`;
-    }else alert('Digite e-mail e senha.');
-  };
-  logoutBtn.onclick = ()=>location.reload();
+/* ===== LOGIN ===== */
+const users = [
+  {email:"admin@iot.com", password:"123456"},
+  {email:"usuario@teste.com", password:"senha2025"}
+];
+const loginOverlay = document.getElementById('login');
+document.getElementById('loginBtn').onclick = () => {
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value.trim();
+  const user = users.find(u => u.email === email && u.password === pass);
+  if (user) {
+    loginOverlay.style.display = 'none';
+  } else {
+    alert("❌ E-mail ou senha incorretos!");
+  }
+};
+document.getElementById('logoutBtn').onclick = () => location.reload();
 
-  // TEMA
-  const themeBtn = document.getElementById('themeBtn');
-  themeBtn.onclick = ()=>{
-    const theme = document.body.getAttribute('data-theme');
-    document.body.setAttribute('data-theme', theme==='dark'?'light':'dark');
-  };
+/* ===== TEMA ===== */
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.onclick = () => {
+  const current = document.body.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  document.body.setAttribute('data-theme', next);
+};
 
-  // MQTT
-  const brokerUrl = 'wss://test.mosquitto.org:8081';
-  const topic = 'home/sensors/dht11';
-  const cmdTopic = 'home/sensors/dht11/cmd';
-  const client = mqtt.connect(brokerUrl);
+/* ===== MQTT ===== */
+const client = mqtt.connect('wss://test.mosquitto.org:8081');
+const topic = 'senai/iot/dh11';
+const cmdTopic = 'senai/iot/dh11';
+const logs = document.getElementById('logs');
+function logMsg(msg){ logs.innerHTML += msg + '<br>'; logs.scrollTop = logs.scrollHeight; }
 
-  const tempEl = document.getElementById('temp');
-  const humEl = document.getElementById('hum');
-  const logs = document.getElementById('logs');
-  const lastUpdateEl = document.getElementById('lastUpdate');
-  const sensorStatusEl = document.getElementById('sensorStatus');
-  const toggleBtn = document.getElementById('toggleSensor');
-  const alertsEl = document.getElementById('alerts');
+client.on('connect',()=>{ logMsg('🟢 Conectado ao broker MQTT'); client.subscribe(topic); });
+client.on('error',err=>logMsg('🔴 Erro MQTT: '+err));
 
-  let sensorOn = false;
-  const tempLimit = 30; // limite para alerta temperatura
-  const humLimit = 70; // limite para alerta umidade
+const tempEl = document.getElementById('temp');
+const humEl = document.getElementById('hum');
+const sensorStatus = document.getElementById('sensorStatus');
+const toggleBtn = document.getElementById('toggleSensor');
+const lastUpdate = document.getElementById('lastUpdate');
+const alerts = document.getElementById('alerts');
+let sensorOn = false;
 
-  toggleBtn.onclick = ()=>{
-    sensorOn = !sensorOn;
-    client.publish(cmdTopic, sensorOn?'ON':'OFF');
-    sensorStatusEl.className = sensorOn?'status on':'status off';
-    sensorStatusEl.innerText = sensorOn?'ON':'OFF';
-    toggleBtn.innerText = sensorOn?'Desligar Sensor':'Ligar Sensor';
-    logs.innerHTML += `⚡ Sensor ${sensorOn?'ligado':'desligado'}<br>`;
-    logs.scrollTop = logs.scrollHeight;
-  };
+toggleBtn.onclick = () => {
+  sensorOn = !sensorOn;
+  client.publish(cmdTopic, sensorOn ? 'ON' : 'OFF');
+  sensorStatus.className = sensorOn ? 'status on' : 'status off';
+  sensorStatus.innerText = sensorOn ? 'ON' : 'OFF';
+  toggleBtn.innerText = sensorOn ? 'Desligar Sensor' : 'Ligar Sensor';
+  logMsg(`⚙️ Sensor ${sensorOn?'ligado':'desligado'}`);
+};
 
-  // CHARTS
-  const tempCtx = document.getElementById('tempChart').getContext('2d');
-  const humCtx = document.getElementById('humChart').getContext('2d');
-  const tempData = [], humData = [], labels = [];
+/* ===== GRÁFICOS ===== */
+const labels=[], tempData=[], humData=[];
+const tempChart = new Chart(document.getElementById('tempChart'), {
+  type:'line',
+  data:{ labels, datasets:[{ label:'Temperatura (°C)', data:tempData, borderColor:'#007bff', backgroundColor:'rgba(0,123,255,0.2)', fill:true, tension:0.4 }]},
+  options:{responsive:true, scales:{y:{beginAtZero:true}}}
+});
+const humChart = new Chart(document.getElementById('humChart'), {
+  type:'line',
+  data:{ labels, datasets:[{ label:'Umidade (%)', data:humData, borderColor:'#28a745', backgroundColor:'rgba(40,167,69,0.2)', fill:true, tension:0.4 }]},
+  options:{responsive:true, scales:{y:{beginAtZero:true}}}
+});
 
-  const tempChart = new Chart(tempCtx,{
-    type:'line',
-    data:{labels,datasets:[{label:'Temperatura (°C)',data:tempData,borderColor:'#00b4d8',backgroundColor:'rgba(0,180,216,0.2)',fill:true,tension:0.4}]},
-    options:{responsive:true,scales:{y:{beginAtZero:true}}}
-  });
-  const humChart = new Chart(humCtx,{
-    type:'line',
-    data:{labels,datasets:[{label:'Umidade (%)',data:humData,borderColor:'#06d6a0',backgroundColor:'rgba(6,214,160,0.2)',fill:true,tension:0.4}]},
-    options:{responsive:true,scales:{y:{beginAtZero:true}}}
-  });
+/* ===== RECEBENDO DADOS ===== */
+client.on('message',(t,msg)=>{
+  const text = msg.toString();
+  logMsg('📥 ' + text);
+  if(text.includes('TEMP:') && text.includes('HUM:')){
+    const [tempStr,humStr] = text.split(',');
+    const temp = parseFloat(tempStr.split(':')[1]);
+    const hum = parseFloat(humStr.split(':')[1]);
+    const time = new Date().toLocaleTimeString();
 
-  // MQTT EVENTS
-  client.on('connect',()=>{
-    logs.innerHTML += '🟢 Conectado ao broker MQTT<br>';
-    client.subscribe(topic);
-  });
+    tempEl.innerText = `${temp.toFixed(1)} °C`;
+    humEl.innerText = `${hum.toFixed(1)} %`;
+    lastUpdate.innerText = time;
 
-  client.on('message',(t,message)=>{
-    const msg = message.toString();
-    logs.innerHTML += `📥 ${msg}<br>`;
-    logs.scrollTop = logs.scrollHeight;
+    labels.push(time);
+    if(labels.length>20){labels.shift();tempData.shift();humData.shift();}
+    tempData.push(temp); humData.push(hum);
+    tempChart.update(); humChart.update();
 
-    if(msg.includes('TEMP:') && msg.includes('HUM:')){
-      const parts = msg.split(',');
-      const temp = parseFloat(parts[0].split(':')[1]);
-      const hum = parseFloat(parts[1].split(':')[1]);
-      const time = new Date().toLocaleTimeString();
-
-      tempEl.innerText = `${temp.toFixed(1)} °C`;
-      humEl.innerText = `${hum.toFixed(1)} %`;
-      lastUpdateEl.innerText = time;
-
-      labels.push(time);
-      if(labels.length>20){labels.shift();tempData.shift();humData.shift();}
-      tempData.push(temp); humData.push(hum);
-      tempChart.update(); humChart.update();
-
-      // ALERTAS
-      alertsEl.innerHTML = '';
-      if(temp>tempLimit){
-        alertsEl.innerHTML += `<span class="alert temp">⚠️ Temperatura alta!</span><br>`;
-      }
-      if(hum>humLimit){
-        alertsEl.innerHTML += `<span class="alert hum">⚠️ Umidade alta!</span>`;
-      }
-    }
-  });
-
-  client.on('error',err=>{ logs.innerHTML += `🔴 Erro MQTT: ${err}<br>`; });
+    alerts.innerHTML = '';
+    if(temp > 30) alerts.innerHTML += `<span class="alert temp">⚠️ Temperatura Alta</span>`;
+    if(hum > 70) alerts.innerHTML += `<span class="alert hum">⚠️ Umidade Alta</span>`;
+  }
+});
 </script>
 
 </body>
